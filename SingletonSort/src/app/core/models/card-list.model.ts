@@ -8,8 +8,10 @@ export interface CardListEntry {
 }
 
 export interface CardList {
+  name: string;
   cards: CardListEntry[];
   totalCards: number;
+  isCollapsed?: boolean;
 }
 
 export interface ParseResult {

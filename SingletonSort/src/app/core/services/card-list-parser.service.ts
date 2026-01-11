@@ -69,8 +69,10 @@ export class CardListParserService {
     const totalCards = cards.reduce((sum, card) => sum + card.quantity, 0);
 
     const cardList: CardList = {
+      name: 'My Card List',
       cards,
-      totalCards
+      totalCards,
+      isCollapsed: false
     };
 
     return {

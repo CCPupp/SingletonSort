@@ -1,95 +1,153 @@
-<div class="card-list-container">
-  <header class="page-header">
-    <h1>Singleton Sort</h1>
-    <p class="subtitle">Paste and save your card list</p>
-  </header>
+<div class="app-container">
+  <aside class="sidebar">
+    <header class="sidebar-header">
+      <h1>Singleton Sort</h1>
+      <p class="subtitle">Compare card lists</p>
+    </header>
 
-  <div class="card-input-section">
-    <div class="input-group">
-      <textarea
-        [(ngModel)]="cardListText"
-        placeholder="Paste your card list here (format: '1 Card Name' per line)"
-        class="card-list-input"
-        rows="10"
-      ></textarea>
-    </div>
+    <div class="card-input-section">
+      <h3>Add Deck</h3>
+      <div class="input-group">
+        <textarea
+          [(ngModel)]="cardListText"
+          placeholder="Paste your card list here (format: '1 Card Name' per line)"
+          class="card-list-input"
+          rows="8"
+        ></textarea>
+      </div>
 
-    <div class="button-group">
-      <button
-        (click)="loadCardList()"
-        [disabled]="!cardListText()"
-        class="load-button"
-      >
-        Load Card List
-      </button>
-
-      @if (cardList()) {
-        <button (click)="clearCardList()" class="clear-button">
-          Clear
+      <div class="button-group">
+        <button
+          (click)="loadCardList()"
+          [disabled]="!cardListText()"
+          class="load-button"
+        >
+          Add Deck
         </button>
-        <button (click)="downloadCardList()" class="download-button">
-          Download
-        </button>
+
+        @if (cardLists().length > 0) {
+          <button (click)="clearAllCardLists()" class="clear-button">
+            Clear All
+          </button>
+        }
+      </div>
+
+      @if (hasErrors()) {
+        <div class="error-message">
+          <div class="error-header">
+            <strong>Errors:</strong>
+            <button (click)="clearErrors()" class="close-button">×</button>
+          </div>
+          <ul class="error-list">
+            @for (error of errors(); track error) {
+              <li>{{ error }}</li>
+            }
+          </ul>
+        </div>
       }
     </div>
-  </div>
 
-  @if (hasErrors()) {
-    <div class="error-message">
-      <div class="error-header">
-        <strong>Errors found while parsing:</strong>
-        <button (click)="clearErrors()" class="close-button">×</button>
-      </div>
-      <ul class="error-list">
-        @for (error of errors(); track error) {
-          <li>{{ error }}</li>
+    <div class="decks-sidebar-section">
+      <h3>Loaded Decks ({{ cardLists().length }})</h3>
+      <div class="decks-list">
+        @for (deck of cardLists(); track $index) {
+          <div class="deck-item">
+            <div class="deck-item-header">
+              <button
+                (click)="toggleCollapse($index)"
+                class="collapse-button"
+                [attr.aria-expanded]="!deck.isCollapsed"
+              >
+                {{ deck.isCollapsed ? '▶' : '▼' }}
+              </button>
+
+              @if (!isEditing($index)) {
+                <span (click)="startEditingName($index)" class="deck-name" title="Click to edit">
+                  {{ deck.name }}
+                </span>
+              } @else {
+                <div class="name-edit-container">
+                  <input
+                    type="text"
+                    [(ngModel)]="editingName"
+                    (keydown.enter)="saveName()"
+                    (keydown.escape)="cancelEdit()"
+                    class="name-edit-input"
+                    autofocus
+                  />
+                  <button (click)="saveName()" class="save-button">✓</button>
+                  <button (click)="cancelEdit()" class="cancel-button">✗</button>
+                </div>
+              }
+
+              <div class="deck-item-actions">
+                <button (click)="downloadCardList($index)" class="icon-button" title="Download">
+                  ⬇
+                </button>
+                <button (click)="removeDeck($index)" class="icon-button remove" title="Remove">
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            @if (!deck.isCollapsed) {
+              <div class="deck-item-content">
+                <div class="deck-stats">
+                  <span class="stat">{{ deck.totalCards }} cards</span>
+                </div>
+                <div class="cards-mini-list">
+                  @for (card of deck.cards; track card.name) {
+                    <div class="card-mini-item">
+                      <span class="qty">{{ card.quantity }}×</span>
+                      <span class="name">{{ card.name }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
         }
-      </ul>
-    </div>
-  }
 
-  @if (cardList(); as currentCardList) {
-    <div class="card-list-info">
-      <div class="card-list-header">
-        <h2>Card List</h2>
-        <div class="total-cards">
-          <span class="stat-value">{{ currentCardList.totalCards }}</span>
-          <span class="stat-label">Total Cards</span>
+        @if (cardLists().length === 0) {
+          <div class="empty-decks">
+            <p>No decks loaded yet. Add a deck to get started!</p>
+          </div>
+        }
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    @if (commonCards().length > 0) {
+      <div class="common-cards-main">
+        <header class="main-header">
+          <h2>Common Cards</h2>
+          <span class="count-badge">{{ commonCards().length }} cards</span>
+        </header>
+
+        <div class="common-cards-grid">
+          @for (common of commonCards(); track common.name) {
+            <div class="common-card-card">
+              <div class="card-name-large">{{ common.name }}</div>
+              <div class="deck-badges">
+                @for (deckIndex of common.deckIndices; track deckIndex) {
+                  <span class="deck-badge">{{ cardLists()[deckIndex]?.name }}</span>
+                }
+              </div>
+            </div>
+          }
         </div>
       </div>
-
-      <div class="cards-table-wrapper">
-        <table class="cards-table">
-          <thead>
-            <tr>
-              <th class="quantity-column">Qty</th>
-              <th class="card-name-column">Card Name</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (card of currentCardList.cards; track card.name) {
-              <tr>
-                <td class="quantity-cell">{{ card.quantity }}</td>
-                <td class="card-name-cell">{{ card.name }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+    } @else {
+      <div class="empty-main">
+        <div class="empty-icon">🔍</div>
+        <h2>No Common Cards Yet</h2>
+        @if (cardLists().length < 2) {
+          <p>Add at least 2 decks to see which cards appear in multiple lists.</p>
+        } @else {
+          <p>No cards appear in multiple decks. Your decks are completely unique!</p>
+        }
       </div>
-    </div>
-  }
-
-  @if (!cardList() && !hasErrors()) {
-    <div class="empty-state">
-      <div class="empty-state-icon">🃏</div>
-      <h3>No card list loaded</h3>
-      <p>Paste your card list above in the format:</p>
-      <div class="example-format">
-        <code>1 Lightning Bolt</code>
-        <code>4 Forest</code>
-        <code>1 Black Lotus</code>
-      </div>
-      <p class="format-note">Each line should start with the quantity followed by the card name</p>
-    </div>
-  }
+    }
+  </main>
 </div>

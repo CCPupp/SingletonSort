@@ -1,40 +1,61 @@
-.card-list-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+// Main layout
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.page-header {
-  text-align: center;
-  margin-bottom: 2rem;
+// Sidebar
+.sidebar {
+  width: 400px;
+  background: #f5f5f5;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 
-  h1 {
-    font-size: 2.5rem;
-    margin: 0 0 0.5rem 0;
+  .sidebar-header {
+    padding: 2rem 1.5rem 1rem;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+
+    h1 {
+      font-size: 2rem;
+      margin: 0 0 0.25rem 0;
+      color: #1a1a1a;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+  }
+}
+
+// Sidebar sections
+.card-input-section {
+  padding: 1.5rem;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
     color: #1a1a1a;
   }
-
-  .subtitle {
-    color: #666;
-    font-size: 1.1rem;
-    margin: 0;
-  }
-}
-
-.card-input-section {
-  margin-bottom: 2rem;
 
   .input-group {
     margin-bottom: 1rem;
 
     .card-list-input {
       width: 100%;
-      padding: 1rem;
+      padding: 0.75rem;
       border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-size: 1rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
       font-family: monospace;
-      line-height: 1.5;
+      line-height: 1.4;
       resize: vertical;
       transition: border-color 0.2s;
 
@@ -52,16 +73,16 @@
 
   .button-group {
     display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    gap: 0.5rem;
 
     .load-button {
-      padding: 0.875rem 1.75rem;
+      flex: 1;
+      padding: 0.75rem;
       background: #4a90e2;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
@@ -76,14 +97,13 @@
       }
     }
 
-    .clear-button,
-    .download-button {
-      padding: 0.875rem 1.25rem;
+    .clear-button {
+      padding: 0.75rem 1rem;
       background: #f5f5f5;
       color: #666;
       border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 1rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
@@ -93,50 +113,42 @@
         border-color: #ccc;
       }
     }
-
-    .download-button {
-      background: #4caf50;
-      color: white;
-      border: none;
-
-      &:hover {
-        background: #45a049;
-      }
-    }
   }
 }
 
 .error-message {
   background: #ffebee;
-  border-left: 4px solid #f44336;
-  padding: 1rem 1.25rem;
+  border-left: 3px solid #f44336;
+  padding: 0.75rem;
   border-radius: 4px;
-  margin-bottom: 1.5rem;
+  margin-top: 1rem;
   color: #c62828;
+  font-size: 0.85rem;
 
   .error-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 
     strong {
       margin: 0;
+      font-size: 0.85rem;
     }
 
     .close-button {
       background: none;
       border: none;
       color: #c62828;
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       cursor: pointer;
       padding: 0;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 4px;
+      border-radius: 3px;
       transition: background 0.2s;
 
       &:hover {
@@ -147,199 +159,398 @@
 
   .error-list {
     margin: 0;
-    padding-left: 1.5rem;
+    padding-left: 1.25rem;
 
     li {
-      margin: 0.25rem 0;
-      font-size: 0.9rem;
+      margin: 0.15rem 0;
+      font-size: 0.8rem;
     }
   }
 }
 
-.card-list-info {
+// Decks sidebar section
+.decks-sidebar-section {
+  padding: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    color: #1a1a1a;
+  }
+
+  .empty-decks {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #999;
+    font-size: 0.9rem;
+  }
+}
+
+.decks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.deck-item {
   background: white;
   border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
+  border-radius: 8px;
+  overflow: hidden;
 
-.card-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #f0f0f0;
+  .deck-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
 
-  h2 {
-    margin: 0;
-    color: #1a1a1a;
-    font-size: 1.75rem;
-  }
-
-  .total-cards {
-    text-align: center;
-
-    .stat-value {
-      display: block;
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #4a90e2;
-    }
-
-    .stat-label {
-      display: block;
-      font-size: 0.875rem;
-      color: #666;
-      margin-top: 0.25rem;
-    }
-  }
-}
-
-.cards-table-wrapper {
-  overflow-x: auto;
-}
-
-.cards-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  thead {
-    background: #f9f9f9;
-
-    th {
-      padding: 0.875rem 1rem;
-      text-align: left;
-      font-weight: 600;
-      color: #1a1a1a;
-      border-bottom: 2px solid #e0e0e0;
+    .collapse-button {
+      background: none;
+      border: none;
       font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      cursor: pointer;
+      padding: 0.25rem;
+      color: #666;
+      transition: color 0.2s;
+      min-width: 20px;
 
-      &.quantity-column {
-        width: 80px;
-        text-align: center;
+      &:hover {
+        color: #1a1a1a;
       }
     }
-  }
 
-  tbody {
-    tr {
-      border-bottom: 1px solid #f0f0f0;
+    .deck-name {
+      flex: 1;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #1a1a1a;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
       transition: background 0.2s;
 
       &:hover {
-        background: #f9f9f9;
-      }
-
-      &:last-child {
-        border-bottom: none;
+        background: #f0f0f0;
       }
     }
 
-    td {
-      padding: 0.875rem 1rem;
+    .name-edit-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
 
-      &.quantity-cell {
-        text-align: center;
+      .name-edit-input {
+        flex: 1;
+        font-size: 0.95rem;
         font-weight: 600;
-        color: #4a90e2;
-        font-size: 1rem;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid #4a90e2;
+        border-radius: 3px;
+        outline: none;
+
+        &:focus {
+          border-color: #357abd;
+        }
       }
 
-      &.card-name-cell {
-        color: #1a1a1a;
+      .save-button,
+      .cancel-button {
+        background: none;
+        border: none;
+        font-size: 1.1rem;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 3px;
+        transition: background 0.2s;
+      }
+
+      .save-button {
+        color: #4caf50;
+        &:hover {
+          background: #e8f5e9;
+        }
+      }
+
+      .cancel-button {
+        color: #f44336;
+        &:hover {
+          background: #ffebee;
+        }
+      }
+    }
+
+    .deck-item-actions {
+      display: flex;
+      gap: 0.25rem;
+
+      .icon-button {
+        background: none;
+        border: none;
         font-size: 1rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        color: #666;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #f0f0f0;
+          color: #1a1a1a;
+        }
+
+        &.remove {
+          &:hover {
+            background: #ffebee;
+            color: #f44336;
+          }
+        }
+      }
+    }
+  }
+
+  .deck-item-content {
+    padding: 0.75rem;
+
+    .deck-stats {
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .cards-mini-list {
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .card-mini-item {
+        display: flex;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        transition: background 0.2s;
+
+        &:hover {
+          background: #f9f9f9;
+        }
+
+        .qty {
+          color: #4a90e2;
+          font-weight: 600;
+          min-width: 30px;
+        }
+
+        .name {
+          color: #1a1a1a;
+        }
       }
     }
   }
 }
 
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #666;
+// Main content area
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #fafafa;
+  padding: 2rem;
+}
 
-  .empty-state-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+.common-cards-main {
+  .main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+
+    h2 {
+      margin: 0;
+      font-size: 2rem;
+      color: #1a1a1a;
+    }
+
+    .count-badge {
+      background: #4a90e2;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+  }
+
+  .common-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .common-card-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .card-name-large {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 1rem;
+      line-height: 1.3;
+    }
+
+    .deck-badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      .deck-badge {
+        background: #4a90e2;
+        color: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+.empty-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #999;
+  padding: 3rem;
+
+  .empty-icon {
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
     opacity: 0.5;
   }
 
-  h3 {
-    font-size: 1.5rem;
-    color: #1a1a1a;
-    margin: 0 0 0.5rem 0;
+  h2 {
+    font-size: 1.75rem;
+    color: #666;
+    margin: 0 0 1rem 0;
   }
 
   p {
-    margin: 0.5rem 0;
-  }
-
-  .example-format {
-    background: #f9f9f9;
-    padding: 1.5rem;
-    border-radius: 8px;
-    display: inline-block;
-    margin: 1.5rem 0;
-
-    code {
-      background: white;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      display: block;
-      border: 1px solid #e0e0e0;
-      color: #4a90e2;
-      font-family: monospace;
-      margin: 0.25rem 0;
-      text-align: left;
-    }
-  }
-
-  .format-note {
-    font-size: 0.9rem;
-    color: #888;
-    margin-top: 1rem;
+    font-size: 1.1rem;
+    margin: 0;
+    max-width: 400px;
   }
 }
 
-@media (max-width: 768px) {
-  .card-list-container {
-    padding: 1rem;
+// Responsive design
+@media (max-width: 1024px) {
+  .app-container {
+    flex-direction: column;
+    height: auto;
   }
 
-  .page-header h1 {
-    font-size: 2rem;
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+    max-height: 60vh;
   }
 
-  .card-input-section {
-    .input-group .card-list-input {
-      font-size: 0.9rem;
+  .main-content {
+    padding: 1.5rem;
+  }
+
+  .common-cards-main {
+    .main-header h2 {
+      font-size: 1.5rem;
     }
 
-    .button-group {
-      flex-direction: column;
+    .common-cards-grid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+    }
 
-      button {
-        width: 100%;
+    .common-card-card {
+      padding: 1rem;
+
+      .card-name-large {
+        font-size: 1.1rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    .sidebar-header {
+      padding: 1.5rem 1rem 0.75rem;
+
+      h1 {
+        font-size: 1.5rem;
       }
     }
   }
 
-  .card-list-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+  .card-input-section {
+    padding: 1rem;
   }
 
-  .cards-table {
-    font-size: 0.9rem;
+  .decks-sidebar-section {
+    padding: 1rem;
+  }
 
-    thead th,
-    tbody td {
-      padding: 0.625rem 0.75rem;
+  .main-content {
+    padding: 1rem;
+  }
+
+  .common-cards-main {
+    .main-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+
+      h2 {
+        font-size: 1.35rem;
+      }
+    }
+
+    .common-cards-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .empty-main {
+    padding: 2rem 1rem;
+
+    .empty-icon {
+      font-size: 3.5rem;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+    }
+
+    p {
+      font-size: 1rem;
     }
   }
 }
