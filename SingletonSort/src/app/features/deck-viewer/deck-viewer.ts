@@ -1,7 +1,7 @@
 import { Component, signal, inject, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MoxfieldApiService } from '../../core';
+import { CardListService } from '../../core';
 
 @Component({
   selector: 'app-deck-viewer',
@@ -10,97 +10,41 @@ import { MoxfieldApiService } from '../../core';
   styleUrl: './deck-viewer.scss'
 })
 export class DeckViewer {
-  protected readonly moxfield = inject(MoxfieldApiService);
+  protected readonly cardListService = inject(CardListService);
 
-  protected deckUrl = signal('');
-  protected isLoadingDeck = signal(false);
+  protected cardListText = signal('');
 
-  protected deck = computed(() => this.moxfield.currentDeck());
-  protected stats = computed(() => this.moxfield.deckStats());
-  protected error = computed(() => this.moxfield.error());
+  protected cardList = computed(() => this.cardListService.currentCardList());
+  protected errors = computed(() => this.cardListService.errors());
+  protected hasErrors = computed(() => this.cardListService.hasErrors());
 
-  // Helper computed properties
-  protected totalPrice = computed(() => {
-    const deck = this.deck();
-    if (!deck) return null;
+  loadCardList() {
+    const text = this.cardListText().trim();
+    if (!text) return;
 
-    let total = 0;
-    let hasPrice = false;
-
-    // Calculate total from mainboard
-    Object.values(deck.mainboard.cards).forEach(entry => {
-      const price = parseFloat(entry.card.prices.usd || '0');
-      if (price > 0) {
-        total += price * entry.quantity;
-        hasPrice = true;
-      }
-    });
-
-    // Add commanders
-    Object.values(deck.commanders.cards).forEach(entry => {
-      const price = parseFloat(entry.card.prices.usd || '0');
-      if (price > 0) {
-        total += price * entry.quantity;
-        hasPrice = true;
-      }
-    });
-
-    return hasPrice ? total : null;
-  });
-
-  protected colorIdentity = computed(() => {
-    const deck = this.deck();
-    if (!deck || deck.commanders.count === 0) return [];
-
-    // Get color identity from commander
-    const commanders = Object.values(deck.commanders.cards);
-    if (commanders.length > 0) {
-      return commanders[0].card.color_identity;
-    }
-
-    return [];
-  });
-
-  async loadDeck() {
-    const url = this.deckUrl().trim();
-    if (!url) return;
-
-    this.isLoadingDeck.set(true);
-    this.moxfield.clearError();
-
-    try {
-      await this.moxfield.getDeckById(url);
-    } catch (error) {
-      console.error('Error loading deck:', error);
-    } finally {
-      this.isLoadingDeck.set(false);
-    }
+    this.cardListService.parseAndSetCardList(text);
   }
 
-  clearDeck() {
-    this.moxfield.clearDeck();
-    this.deckUrl.set('');
+  clearCardList() {
+    this.cardListService.clearCardList();
+    this.cardListText.set('');
   }
 
-  protected getColorSymbol(color: string): string {
-    const symbols: Record<string, string> = {
-      W: '⚪',
-      U: '🔵',
-      B: '⚫',
-      R: '🔴',
-      G: '🟢'
-    };
-    return symbols[color] || color;
+  clearErrors() {
+    this.cardListService.clearErrors();
   }
 
-  protected formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString();
-  }
+  // Download card list as text file
+  downloadCardList() {
+    const text = this.cardListService.getCardListText();
+    if (!text) return;
 
-  protected formatPrice(price: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'card-list.txt';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

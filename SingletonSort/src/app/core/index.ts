@@ -1,5 +1,6 @@
 // Services
-export * from './services/moxfield-api.service';
+export * from './services/card-list-parser.service';
+export * from './services/card-list.service';
 
 // Models
-export * from './models/moxfield.model';
+export * from './models/card-list.model';

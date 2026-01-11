@@ -1,228 +1,95 @@
-<div class="deck-viewer-container">
+<div class="card-list-container">
   <header class="page-header">
-    <h1>Moxfield Deck Viewer</h1>
-    <p class="subtitle">View basic information from any public Moxfield deck</p>
+    <h1>Singleton Sort</h1>
+    <p class="subtitle">Paste and save your card list</p>
   </header>
 
-  <div class="deck-input-section">
+  <div class="card-input-section">
     <div class="input-group">
-      <input
-        type="text"
-        [(ngModel)]="deckUrl"
-        placeholder="Paste Moxfield deck URL or ID (e.g., https://moxfield.com/decks/...)"
-        class="deck-url-input"
-        (keyup.enter)="loadDeck()"
-      />
+      <textarea
+        [(ngModel)]="cardListText"
+        placeholder="Paste your card list here (format: '1 Card Name' per line)"
+        class="card-list-input"
+        rows="10"
+      ></textarea>
+    </div>
+
+    <div class="button-group">
       <button
-        (click)="loadDeck()"
-        [disabled]="!deckUrl() || isLoadingDeck()"
+        (click)="loadCardList()"
+        [disabled]="!cardListText()"
         class="load-button"
       >
-        @if (isLoadingDeck()) {
-          <span class="spinner"></span>
-          Loading...
-        } @else {
-          Load Deck
-        }
+        Load Card List
       </button>
-    </div>
 
-    @if (deck()) {
-      <button (click)="clearDeck()" class="clear-button">
-        Clear Deck
-      </button>
-    }
+      @if (cardList()) {
+        <button (click)="clearCardList()" class="clear-button">
+          Clear
+        </button>
+        <button (click)="downloadCardList()" class="download-button">
+          Download
+        </button>
+      }
+    </div>
   </div>
 
-  @if (error()) {
+  @if (hasErrors()) {
     <div class="error-message">
-      <strong>Error:</strong> {{ error()?.message }}
-      @if (error()?.statusCode === 404) {
-        <p>Deck not found. Please check the URL and make sure the deck is public.</p>
-      }
+      <div class="error-header">
+        <strong>Errors found while parsing:</strong>
+        <button (click)="clearErrors()" class="close-button">×</button>
+      </div>
+      <ul class="error-list">
+        @for (error of errors(); track error) {
+          <li>{{ error }}</li>
+        }
+      </ul>
     </div>
   }
 
-  @if (isLoadingDeck()) {
-    <div class="loading-state">
-      <div class="spinner-large"></div>
-      <p>Loading deck information...</p>
-    </div>
-  }
+  @if (cardList(); as currentCardList) {
+    <div class="card-list-info">
+      <div class="card-list-header">
+        <h2>Card List</h2>
+        <div class="total-cards">
+          <span class="stat-value">{{ currentCardList.totalCards }}</span>
+          <span class="stat-label">Total Cards</span>
+        </div>
+      </div>
 
-  @if (deck(); as currentDeck) {
-    <div class="deck-info-card">
-      <div class="deck-header">
-        <div class="deck-title-section">
-          <h2 class="deck-name">{{ currentDeck.name }}</h2>
-          <div class="deck-meta">
-            <span class="format-badge">{{ currentDeck.format }}</span>
-            @if (colorIdentity().length > 0) {
-              <span class="color-identity">
-                @for (color of colorIdentity(); track color) {
-                  <span class="color-symbol">{{ getColorSymbol(color) }}</span>
-                }
-              </span>
+      <div class="cards-table-wrapper">
+        <table class="cards-table">
+          <thead>
+            <tr>
+              <th class="quantity-column">Qty</th>
+              <th class="card-name-column">Card Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (card of currentCardList.cards; track card.name) {
+              <tr>
+                <td class="quantity-cell">{{ card.quantity }}</td>
+                <td class="card-name-cell">{{ card.name }}</td>
+              </tr>
             }
-          </div>
-        </div>
-
-        <div class="deck-stats-quick">
-          <div class="stat">
-            <span class="stat-value">{{ stats()?.totalCards }}</span>
-            <span class="stat-label">Cards</span>
-          </div>
-          @if (totalPrice(); as price) {
-            <div class="stat">
-              <span class="stat-value">{{ formatPrice(price) }}</span>
-              <span class="stat-label">Est. Price</span>
-            </div>
-          }
-        </div>
-      </div>
-
-      @if (currentDeck.description) {
-        <div class="deck-description">
-          <h3>Description</h3>
-          <p>{{ currentDeck.description }}</p>
-        </div>
-      }
-
-      @if (currentDeck.commanders.count > 0) {
-        <div class="commanders-section">
-          <h3>Commander{{ currentDeck.commanders.count > 1 ? 's' : '' }}</h3>
-          <div class="commander-list">
-            @for (entry of currentDeck.commanders.cards | keyvalue; track entry.key) {
-              <div class="commander-card">
-                @if (entry.value.card.image_uris) {
-                  <img
-                    [src]="entry.value.card.image_uris.small"
-                    [alt]="entry.value.card.name"
-                    class="card-image"
-                  />
-                }
-                <div class="card-info">
-                  <strong>{{ entry.value.card.name }}</strong>
-                  <span class="mana-cost">{{ entry.value.card.mana_cost }}</span>
-                  <span class="card-type">{{ entry.value.card.type_line }}</span>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-      }
-
-      <div class="deck-stats-detailed">
-        <h3>Deck Composition</h3>
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-label">Mainboard</span>
-            <span class="stat-value">{{ currentDeck.mainboard.count }}</span>
-          </div>
-
-          @if (currentDeck.sideboard.count > 0) {
-            <div class="stat-item">
-              <span class="stat-label">Sideboard</span>
-              <span class="stat-value">{{ currentDeck.sideboard.count }}</span>
-            </div>
-          }
-
-          @if (currentDeck.maybeboard.count > 0) {
-            <div class="stat-item">
-              <span class="stat-label">Maybeboard</span>
-              <span class="stat-value">{{ currentDeck.maybeboard.count }}</span>
-            </div>
-          }
-
-          @if (currentDeck.companions.count > 0) {
-            <div class="stat-item">
-              <span class="stat-label">Companion</span>
-              <span class="stat-value">{{ currentDeck.companions.count }}</span>
-            </div>
-          }
-        </div>
-      </div>
-
-      <div class="deck-engagement">
-        <h3>Community Stats</h3>
-        <div class="engagement-grid">
-          <div class="engagement-item">
-            <span class="engagement-icon">👁️</span>
-            <span class="engagement-value">{{ currentDeck.viewCount }}</span>
-            <span class="engagement-label">Views</span>
-          </div>
-
-          <div class="engagement-item">
-            <span class="engagement-icon">❤️</span>
-            <span class="engagement-value">{{ currentDeck.likeCount }}</span>
-            <span class="engagement-label">Likes</span>
-          </div>
-
-          <div class="engagement-item">
-            <span class="engagement-icon">💬</span>
-            <span class="engagement-value">{{ currentDeck.commentCount }}</span>
-            <span class="engagement-label">Comments</span>
-          </div>
-        </div>
-      </div>
-
-      @if (currentDeck.authors.length > 0) {
-        <div class="deck-authors">
-          <h3>Author{{ currentDeck.authors.length > 1 ? 's' : '' }}</h3>
-          <div class="authors-list">
-            @for (author of currentDeck.authors; track author.userId) {
-              <div class="author-item">
-                @if (author.profileImageUrl) {
-                  <img
-                    [src]="author.profileImageUrl"
-                    [alt]="author.displayName"
-                    class="author-avatar"
-                  />
-                }
-                <span class="author-name">{{ author.displayName || author.userName }}</span>
-              </div>
-            }
-          </div>
-        </div>
-      }
-
-      <div class="deck-metadata">
-        <div class="metadata-item">
-          <span class="metadata-label">Created:</span>
-          <span class="metadata-value">{{ formatDate(currentDeck.createdAtUtc) }}</span>
-        </div>
-        <div class="metadata-item">
-          <span class="metadata-label">Last Updated:</span>
-          <span class="metadata-value">{{ formatDate(currentDeck.lastUpdatedAtUtc) }}</span>
-        </div>
-        <div class="metadata-item">
-          <span class="metadata-label">Visibility:</span>
-          <span class="metadata-value">{{ currentDeck.visibility }}</span>
-        </div>
-      </div>
-
-      <div class="deck-actions">
-        <a
-          [href]="currentDeck.publicUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="view-on-moxfield-button"
-        >
-          View on Moxfield →
-        </a>
+          </tbody>
+        </table>
       </div>
     </div>
   }
 
-  @if (!deck() && !isLoadingDeck() && !error()) {
+  @if (!cardList() && !hasErrors()) {
     <div class="empty-state">
       <div class="empty-state-icon">🃏</div>
-      <h3>No deck loaded</h3>
-      <p>Paste a Moxfield deck URL above to view deck information</p>
-      <div class="example-urls">
-        <p class="example-label">Example URL:</p>
-        <code>https://moxfield.com/decks/oEWXWHM5eEGMmopExLWRCA</code>
+      <h3>No card list loaded</h3>
+      <p>Paste your card list above in the format:</p>
+      <div class="example-format">
+        <code>1 Lightning Bolt</code>
+        <code>4 Forest</code>
+        <code>1 Black Lotus</code>
       </div>
+      <p class="format-note">Each line should start with the quantity followed by the card name</p>
     </div>
   }
 </div>
