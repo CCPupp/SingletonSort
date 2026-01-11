@@ -10,7 +10,7 @@ import { GetDeckOptions, MoxfieldDeck, MoxfieldError } from '../models/moxfield.
  * Moxfield's terms of service prohibit scraping. Use responsibly.
  *
  * @example
- * ```typescript
+ * ```TypeScript
  * const moxfieldService = inject(MoxfieldApiService);
  *
  * // Fetch a deck
@@ -63,7 +63,7 @@ export class MoxfieldApiService {
    * @returns Promise resolving to the deck data
    *
    * @example
-   * ```typescript
+   * ```TypeScript
    * // Using just the ID
    * const deck = await service.getDeckById('oEWXWHM5eEGMmopExLWRCA');
    *
@@ -125,7 +125,7 @@ export class MoxfieldApiService {
    * @returns Clean deck ID
    *
    * @example
-   * ```typescript
+   * ```TypeScript
    * extractDeckId('https://moxfield.com/decks/abc123') // returns 'abc123'
    * extractDeckId('abc123') // returns 'abc123'
    * ```
