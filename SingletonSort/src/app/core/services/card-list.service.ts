@@ -116,9 +116,56 @@ export class CardListService {
   }
 
   /**
+   * Categorizes a card into a land group or returns null
+   */
+  private getLandGroup(cardName: string): string | null {
+    const fetchLands = new Set([
+      'Flooded Strand', 'Polluted Delta', 'Bloodstained Mire', 'Wooded Foothills',
+      'Windswept Heath', 'Marsh Flats', 'Scalding Tarn', 'Verdant Catacombs',
+      'Arid Mesa', 'Misty Rainforest', 'Prismatic Vista', 'Fabled Passage',
+      'Evolving Wilds', 'Terramorphic Expanse', 'Myriad Landscape'
+    ]);
+
+    const surveilLands = new Set([
+      'Undercity Sewers', 'Contaminated Aquifer', 'Geothermal Bog', 'Tangled Islet',
+      'Molten Tributary', 'Haunted Mire', 'Twisted Landscape', 'Sheltered Thicket',
+      'Radiant Fountain', 'Desert of the Glorified', 'Desert of the Mindful',
+      'Desert of the Indomitable', 'Desert of the Fervent', 'Desert of the True'
+    ]);
+
+    const dualLands = new Set([
+      'Tundra', 'Underground Sea', 'Badlands', 'Taiga', 'Savannah',
+      'Scrubland', 'Volcanic Island', 'Bayou', 'Plateau', 'Tropical Island'
+    ]);
+
+    const shockLands = new Set([
+      'Hallowed Fountain', 'Watery Grave', 'Blood Crypt', 'Stomping Ground',
+      'Temple Garden', 'Godless Shrine', 'Steam Vents', 'Overgrown Tomb',
+      'Sacred Foundry', 'Breeding Pool'
+    ]);
+
+    const triLands = new Set([
+      'Spara\'s Headquarters', 'Raffine\'s Tower', 'Xander\'s Lounge',
+      'Ziatora\'s Proving Ground', 'Jetmir\'s Garden', 'Zagoth Triome',
+      'Raugrin Triome', 'Savai Triome', 'Ketria Triome', 'Indatha Triome',
+      'Arcane Sanctum', 'Crumbling Necropolis', 'Jungle Shrine', 'Savage Lands',
+      'Seaside Citadel', 'Nomad Outpost', 'Mystic Monastery', 'Opulent Palace',
+      'Sandsteppe Citadel', 'Frontier Bivouac'
+    ]);
+
+    if (fetchLands.has(cardName)) return 'Fetch Lands';
+    if (surveilLands.has(cardName)) return 'Surveil Lands';
+    if (dualLands.has(cardName)) return 'Dual Lands';
+    if (shockLands.has(cardName)) return 'Shock Lands';
+    if (triLands.has(cardName)) return 'Tri Lands';
+
+    return null;
+  }
+
+  /**
    * Finds cards that appear in multiple decks
    */
-  private findCommonCards(): Array<{ name: string; deckIndices: number[] }> {
+  private findCommonCards(): Array<{ name: string; deckIndices: number[]; group: string | null }> {
     const lists = this.cardListsSignal();
     if (lists.length < 2) return [];
 
@@ -138,17 +185,26 @@ export class CardListService {
       });
     });
 
-    const commonCards: Array<{ name: string; deckIndices: number[] }> = [];
+    const commonCards: Array<{ name: string; deckIndices: number[]; group: string | null }> = [];
     cardMap.forEach((deckIndices, cardName) => {
       if (deckIndices.size > 1) {
         commonCards.push({
           name: cardName,
-          deckIndices: Array.from(deckIndices).sort()
+          deckIndices: Array.from(deckIndices).sort(),
+          group: this.getLandGroup(cardName)
         });
       }
     });
 
-    return commonCards.sort((a, b) => a.name.localeCompare(b.name));
+    return commonCards.sort((a, b) => {
+      // Sort by group first (lands grouped together), then by name
+      const groupA = a.group || 'zzz';
+      const groupB = b.group || 'zzz';
+      if (groupA !== groupB) {
+        return groupA.localeCompare(groupB);
+      }
+      return a.name.localeCompare(b.name);
+    });
   }
 
   /**

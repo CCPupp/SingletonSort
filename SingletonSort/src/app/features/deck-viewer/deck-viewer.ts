@@ -17,9 +17,21 @@ export class DeckViewer {
   protected cardListText = signal('');
   protected editingIndex = signal<number | null>(null);
   protected editingName = signal('');
+  protected selectedDeckIndex = signal<number | null>(null);
 
   protected cardLists = computed(() => this.cardListService.cardLists());
-  protected commonCards = computed(() => this.cardListService.commonCards());
+  protected allCommonCards = computed(() => this.cardListService.commonCards());
+  protected commonCards = computed(() => {
+    const selected = this.selectedDeckIndex();
+    const allCards = this.allCommonCards();
+
+    if (selected === null) {
+      return allCards;
+    }
+
+    // Filter to only show cards that include the selected deck
+    return allCards.filter(card => card.deckIndices.includes(selected));
+  });
   protected errors = computed(() => this.cardListService.errors());
   protected hasErrors = computed(() => this.cardListService.hasErrors());
 
@@ -38,6 +50,30 @@ export class DeckViewer {
 
   removeDeck(index: number) {
     this.cardListService.removeCardList(index);
+    // Clear selection if removing the selected deck
+    if (this.selectedDeckIndex() === index) {
+      this.selectedDeckIndex.set(null);
+    } else if (this.selectedDeckIndex() !== null && this.selectedDeckIndex()! > index) {
+      // Adjust selection index if a deck before it was removed
+      this.selectedDeckIndex.set(this.selectedDeckIndex()! - 1);
+    }
+  }
+
+  selectDeck(index: number) {
+    // Toggle selection - if already selected, deselect
+    if (this.selectedDeckIndex() === index) {
+      this.selectedDeckIndex.set(null);
+    } else {
+      this.selectedDeckIndex.set(index);
+    }
+  }
+
+  isSelected(index: number): boolean {
+    return this.selectedDeckIndex() === index;
+  }
+
+  clearSelection() {
+    this.selectedDeckIndex.set(null);
   }
 
   clearErrors() {

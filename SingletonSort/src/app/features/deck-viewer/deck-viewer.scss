@@ -7,7 +7,7 @@
 .shutdown-button{background:#f44336;color:#fff;border:0;border-radius:50%;width:32px;height:32px;font-size:1.25rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
 .shutdown-button:hover{background:#d32f2f}
 .card-input-section{padding:1.5rem;background:#fff;border-bottom:1px solid #e0e0e0}
-.card-input-section h3,.decks-sidebar-section h3{margin:0 0 1rem;font-size:1.1rem;color:#1a1a1a}
+.card-input-section h3{margin:0 0 1rem;font-size:1.1rem;color:#1a1a1a}
 .card-list-input{width:100%;padding:.75rem;border:2px solid #e0e0e0;border-radius:6px;font:.9rem monospace;line-height:1.4;resize:vertical}
 .card-list-input:focus{outline:0;border-color:#4a90e2}
 .button-group{display:flex;gap:.5rem;margin-top:1rem}
@@ -22,9 +22,14 @@
 .error-list{margin:0;padding-left:1.25rem}
 .error-list li{margin:.15rem 0;font-size:.8rem}
 .decks-sidebar-section{padding:1.5rem;flex:1;overflow-y:auto}
+.section-header{margin-bottom:1rem}
+.section-header h3{margin:0 0 .25rem;font-size:1.1rem;color:#1a1a1a}
+.section-header .hint{margin:0;font-size:.8rem;color:#999;font-style:italic}
 .empty-decks{text-align:center;padding:2rem 1rem;color:#999;font-size:.9rem}
 .decks-list{display:flex;flex-direction:column;gap:.75rem}
-.deck-item{background:#fff;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden}
+.deck-item{background:#fff;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;cursor:pointer;transition:all .2s}
+.deck-item:hover{border-color:#4a90e2;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+.deck-item.selected{border-color:#4a90e2;border-width:2px;box-shadow:0 0 0 2px rgba(74,144,226,.2)}
 .deck-item-header{display:flex;align-items:center;gap:.5rem;padding:.75rem;background:#fafafa;border-bottom:1px solid #e0e0e0}
 .collapse-button,.icon-button{background:0;border:0;cursor:pointer;padding:.25rem;color:#666;border-radius:3px}
 .collapse-button{font-size:.9rem;min-width:20px}
@@ -51,10 +56,17 @@
 .card-mini-item .qty{color:#4a90e2;font-weight:600;min-width:30px}
 .card-mini-item .name{color:#1a1a1a}
 .main-content{flex:1;overflow-y:auto;background:#fafafa;padding:2rem}
-.main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;padding-bottom:1rem;border-bottom:2px solid #e0e0e0}
+.main-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;padding-bottom:1rem;border-bottom:2px solid #e0e0e0}
+.main-header .header-left{display:flex;flex-direction:column;gap:.75rem}
 .main-header h2{margin:0;font-size:2rem;color:#1a1a1a}
+.filter-info{display:flex;align-items:center;gap:.5rem}
+.filter-label{font-size:.9rem;color:#666;font-weight:600}
+.clear-filter-button{padding:.35rem .75rem;background:#f44336;color:#fff;border:0;border-radius:4px;font-size:.85rem;cursor:pointer;transition:background .2s}
+.clear-filter-button:hover{background:#d32f2f}
 .count-badge{background:#4a90e2;color:#fff;padding:.5rem 1rem;border-radius:20px;font:600 1rem sans-serif}
 .common-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
+.group-header{grid-column:1 / -1;font:700 1.35rem sans-serif;color:#1a1a1a;margin:1.5rem 0 .75rem;padding:.75rem 1rem;background:linear-gradient(135deg,#4a90e2,#357abd);color:#fff;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+.group-header:first-child{margin-top:0}
 .common-card-card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .common-card-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);transform:translateY(-2px)}
 .card-name-large{font:700 1.25rem sans-serif;color:#1a1a1a;margin-bottom:1rem;line-height:1.3}
@@ -79,6 +91,8 @@
 .card-input-section,.decks-sidebar-section,.main-content{padding:1rem}
 .main-header{flex-direction:column;align-items:flex-start;gap:.75rem}
 .main-header h2{font-size:1.35rem}
+.main-header .header-left{width:100%}
+.filter-info{flex-wrap:wrap}
 .common-cards-grid{grid-template-columns:1fr}
 .empty-main{padding:2rem 1rem}
 .empty-main .empty-icon{font-size:3.5rem}

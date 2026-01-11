@@ -55,11 +55,22 @@
     </div>
 
     <div class="decks-sidebar-section">
-      <h3>Loaded Decks ({{ cardLists().length }})</h3>
+      <div class="section-header">
+        <h3>Loaded Decks ({{ cardLists().length }})</h3>
+        <p class="hint">Click a deck to filter common cards</p>
+      </div>
       <div class="decks-list">
         @for (deck of cardLists(); track $index) {
-          <div class="deck-item">
+          <div class="deck-item" [class.selected]="isSelected($index)">
             <div class="deck-item-header">
+              <input
+                type="checkbox"
+                [checked]="isSelected($index)"
+                (change)="selectDeck($index)"
+                class="deck-checkbox"
+                title="Filter common cards by this deck"
+              />
+
               <button
                 (click)="toggleCollapse($index)"
                 class="collapse-button"
@@ -128,12 +139,29 @@
     @if (commonCards().length > 0) {
       <div class="common-cards-main">
         <header class="main-header">
-          <h2>Common Cards</h2>
+          <div class="header-left">
+            <h2>Common Cards</h2>
+            @if (selectedDeckIndex() !== null) {
+              <div class="filter-info">
+                <span class="filter-label">Filtered by: {{ cardLists()[selectedDeckIndex()!]?.name }}</span>
+                <button (click)="clearSelection()" class="clear-filter-button" title="Clear filter">
+                  Clear
+                </button>
+              </div>
+            }
+          </div>
           <span class="count-badge">{{ commonCards().length }} cards</span>
         </header>
 
         <div class="common-cards-grid">
-          @for (common of commonCards(); track common.name) {
+          @for (common of commonCards(); track common.name; let i = $index) {
+            @if (i === 0 || common.group !== commonCards()[i - 1].group) {
+              @if (common.group) {
+                <div class="group-header">{{ common.group }}</div>
+              } @else if (i > 0 && commonCards()[i - 1].group) {
+                <div class="group-header">Other Cards</div>
+              }
+            }
             <div class="common-card-card">
               <div class="card-name-large">{{ common.name }}</div>
               <div class="deck-badges">
