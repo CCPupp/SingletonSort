@@ -1,8 +1,15 @@
 <div class="app-container">
   <aside class="sidebar">
     <header class="sidebar-header">
-      <h1>Singleton Sort</h1>
-      <p class="subtitle">Compare card lists</p>
+      <div class="header-content">
+        <div>
+          <h1>Singleton Sort</h1>
+          <p class="subtitle">Compare card lists</p>
+        </div>
+        <button (click)="shutdownServer()" class="shutdown-button" title="Shutdown Server">
+          ✕
+        </button>
+      </div>
     </header>
 
     <div class="card-input-section">

@@ -1,6 +1,7 @@
 import { Component, signal, inject, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { CardListService } from '../../core';
 
 @Component({
@@ -11,6 +12,7 @@ import { CardListService } from '../../core';
 })
 export class DeckViewer {
   protected readonly cardListService = inject(CardListService);
+  private readonly http = inject(HttpClient);
 
   protected cardListText = signal('');
   protected editingIndex = signal<number | null>(null);
@@ -87,5 +89,19 @@ export class DeckViewer {
     a.download = `${deckName}.txt`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // Shutdown the local server
+  shutdownServer() {
+    if (confirm('Are you sure you want to shut down the server?')) {
+      this.http.post('/api/shutdown', {}).subscribe({
+        next: () => {
+          alert('Server shutting down...');
+        },
+        error: () => {
+          // Server already shut down, that's expected
+        }
+      });
+    }
   }
 }
