@@ -1,0 +1,20 @@
+# Go build artifacts
+singleton-sort
+singleton-sort.exe
+singleton-sort-mac
+singleton-sort-mac-arm64
+singleton-sort-linux
+
+# Go dependencies
+go.sum
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
