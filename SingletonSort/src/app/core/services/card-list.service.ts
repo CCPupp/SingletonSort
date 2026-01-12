@@ -15,23 +15,17 @@ export class CardListService {
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly STORAGE_KEY = 'singleton-sort-card-list';
 
-  // State management with signals
   private readonly cardListsSignal = signal<CardList[]>([]);
   private readonly loadingSignal = signal(false);
   private readonly errorsSignal = signal<string[]>([]);
 
-  // Public readonly signals
   readonly cardLists = this.cardListsSignal.asReadonly();
-  readonly isLoading = this.loadingSignal.asReadonly();
   readonly errors = this.errorsSignal.asReadonly();
 
-  // Computed signals
   readonly hasErrors = computed(() => this.errors().length > 0);
-  readonly hasCardLists = computed(() => this.cardLists().length > 0);
   readonly commonCards = computed(() => this.findCommonCards());
 
   constructor() {
-    // Load from localStorage on init (only in browser)
     if (this.isBrowser) {
       this.loadFromStorage();
     }
@@ -122,15 +116,13 @@ export class CardListService {
     const fetchLands = new Set([
       'Flooded Strand', 'Polluted Delta', 'Bloodstained Mire', 'Wooded Foothills',
       'Windswept Heath', 'Marsh Flats', 'Scalding Tarn', 'Verdant Catacombs',
-      'Arid Mesa', 'Misty Rainforest', 'Prismatic Vista', 'Fabled Passage',
-      'Evolving Wilds', 'Terramorphic Expanse', 'Myriad Landscape'
+      'Arid Mesa', 'Misty Rainforest'
     ]);
 
     const surveilLands = new Set([
-      'Undercity Sewers', 'Contaminated Aquifer', 'Geothermal Bog', 'Tangled Islet',
-      'Molten Tributary', 'Haunted Mire', 'Twisted Landscape', 'Sheltered Thicket',
-      'Radiant Fountain', 'Desert of the Glorified', 'Desert of the Mindful',
-      'Desert of the Indomitable', 'Desert of the Fervent', 'Desert of the True'
+      'Shadowy Backstreet', 'Elegant Parlor', 'Lush Portico', 'Raucous Theater',
+      'Commercial District', 'Meticulous Archive', 'Thundering Falls', 'Hedge Maze',
+      'Blazing Greenhouse', 'Underground Mortuary'
     ]);
 
     const dualLands = new Set([
@@ -147,10 +139,7 @@ export class CardListService {
     const triLands = new Set([
       'Spara\'s Headquarters', 'Raffine\'s Tower', 'Xander\'s Lounge',
       'Ziatora\'s Proving Ground', 'Jetmir\'s Garden', 'Zagoth Triome',
-      'Raugrin Triome', 'Savai Triome', 'Ketria Triome', 'Indatha Triome',
-      'Arcane Sanctum', 'Crumbling Necropolis', 'Jungle Shrine', 'Savage Lands',
-      'Seaside Citadel', 'Nomad Outpost', 'Mystic Monastery', 'Opulent Palace',
-      'Sandsteppe Citadel', 'Frontier Bivouac'
+      'Raugrin Triome', 'Savai Triome', 'Ketria Triome', 'Indatha Triome'
     ]);
 
     if (fetchLands.has(cardName)) return 'Fetch Lands';
@@ -197,7 +186,6 @@ export class CardListService {
     });
 
     return commonCards.sort((a, b) => {
-      // Sort by group first (lands grouped together), then by name
       const groupA = a.group || 'zzz';
       const groupB = b.group || 'zzz';
       if (groupA !== groupB) {
