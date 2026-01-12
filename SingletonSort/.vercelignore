@@ -1,0 +1,11 @@
+node_modules
+.angular
+.git
+.vscode
+.idea
+*.md
+coverage
+.editorconfig
+karma.conf.js
+tsconfig.spec.json
+src/**/*.spec.ts
