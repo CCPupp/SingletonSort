@@ -61,6 +61,8 @@
 .main-header h2{margin:0;font-size:2rem;color:#1a1a1a}
 .filter-info{display:flex;align-items:center;gap:.5rem}
 .filter-label{font-size:.9rem;color:#666;font-weight:600}
+.filter-label.comparison-mode{color:#7b1fa2}
+.deck-checkbox:disabled{opacity:.4;cursor:not-allowed}
 .clear-filter-button{padding:.35rem .75rem;background:#f44336;color:#fff;border:0;border-radius:4px;font-size:.85rem;cursor:pointer;transition:background .2s}
 .clear-filter-button:hover{background:#d32f2f}
 .count-badge{background:#4a90e2;color:#fff;padding:.5rem 1rem;border-radius:20px;font:600 1rem sans-serif}

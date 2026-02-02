@@ -57,7 +57,7 @@
     <div class="decks-sidebar-section">
       <div class="section-header">
         <h3>Loaded Decks ({{ cardLists().length }})</h3>
-        <p class="hint">Click a deck to filter common cards</p>
+        <p class="hint">Select up to 2 decks to compare</p>
       </div>
       <div class="decks-list">
         @for (deck of cardLists(); track $index) {
@@ -66,9 +66,10 @@
               <input
                 type="checkbox"
                 [checked]="isSelected($index)"
+                [disabled]="isDisabled($index)"
                 (change)="selectDeck($index)"
                 class="deck-checkbox"
-                title="Filter common cards by this deck"
+                [title]="isDisabled($index) ? 'Deselect a deck first (max 2)' : 'Select deck for comparison'"
               />
 
               <button
@@ -141,9 +142,13 @@
         <header class="main-header">
           <div class="header-left">
             <h2>Common Cards</h2>
-            @if (selectedDeckIndex() !== null) {
+            @if (selectedDeckIndices().length > 0) {
               <div class="filter-info">
-                <span class="filter-label">Filtered by: {{ cardLists()[selectedDeckIndex()!]?.name }}</span>
+                @if (selectedDeckIndices().length === 1) {
+                  <span class="filter-label">Filtered by: {{ cardLists()[selectedDeckIndices()[0]]?.name }}</span>
+                } @else {
+                  <span class="filter-label comparison-mode">Comparing: {{ cardLists()[selectedDeckIndices()[0]]?.name }} & {{ cardLists()[selectedDeckIndices()[1]]?.name }}</span>
+                }
                 <button (click)="clearSelection()" class="clear-filter-button" title="Clear filter">
                   Clear
                 </button>

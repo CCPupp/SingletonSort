@@ -17,20 +17,28 @@ export class DeckViewer {
   protected cardListText = signal('');
   protected editingIndex = signal<number | null>(null);
   protected editingName = signal('');
-  protected selectedDeckIndex = signal<number | null>(null);
+  protected selectedDeckIndices = signal<number[]>([]);
 
   protected cardLists = computed(() => this.cardListService.cardLists());
   protected allCommonCards = computed(() => this.cardListService.commonCards());
   protected commonCards = computed(() => {
-    const selected = this.selectedDeckIndex();
+    const selected = this.selectedDeckIndices();
     const allCards = this.allCommonCards();
 
-    if (selected === null) {
+    if (selected.length === 0) {
       return allCards;
     }
 
-    // Filter to only show cards that include the selected deck
-    return allCards.filter(card => card.deckIndices.includes(selected));
+    if (selected.length === 1) {
+      // Filter to only show cards that include the selected deck
+      return allCards.filter(card => card.deckIndices.includes(selected[0]));
+    }
+
+    // 2 selected: show only cards in BOTH decks
+    return allCards.filter(card =>
+      card.deckIndices.includes(selected[0]) &&
+      card.deckIndices.includes(selected[1])
+    );
   });
   protected errors = computed(() => this.cardListService.errors());
   protected hasErrors = computed(() => this.cardListService.hasErrors());
@@ -50,30 +58,37 @@ export class DeckViewer {
 
   removeDeck(index: number) {
     this.cardListService.removeCardList(index);
-    // Clear selection if removing the selected deck
-    if (this.selectedDeckIndex() === index) {
-      this.selectedDeckIndex.set(null);
-    } else if (this.selectedDeckIndex() !== null && this.selectedDeckIndex()! > index) {
-      // Adjust selection index if a deck before it was removed
-      this.selectedDeckIndex.set(this.selectedDeckIndex()! - 1);
-    }
+    const current = this.selectedDeckIndices();
+    // Remove the deck from selection if present, and adjust indices for decks after it
+    const updated = current
+      .filter(i => i !== index)
+      .map(i => i > index ? i - 1 : i);
+    this.selectedDeckIndices.set(updated);
   }
 
   selectDeck(index: number) {
-    // Toggle selection - if already selected, deselect
-    if (this.selectedDeckIndex() === index) {
-      this.selectedDeckIndex.set(null);
-    } else {
-      this.selectedDeckIndex.set(index);
+    const current = this.selectedDeckIndices();
+    if (current.includes(index)) {
+      // Deselect
+      this.selectedDeckIndices.set(current.filter(i => i !== index));
+    } else if (current.length < 2) {
+      // Select (max 2)
+      this.selectedDeckIndices.set([...current, index]);
     }
+    // If already 2 selected and clicking a third, do nothing
   }
 
   isSelected(index: number): boolean {
-    return this.selectedDeckIndex() === index;
+    return this.selectedDeckIndices().includes(index);
+  }
+
+  isDisabled(index: number): boolean {
+    const selected = this.selectedDeckIndices();
+    return !selected.includes(index) && selected.length >= 2;
   }
 
   clearSelection() {
-    this.selectedDeckIndex.set(null);
+    this.selectedDeckIndices.set([]);
   }
 
   clearErrors() {

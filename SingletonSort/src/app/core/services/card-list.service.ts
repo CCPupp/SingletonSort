@@ -1,5 +1,6 @@
 import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { CardList, ParseResult } from '../models/card-list.model';
 import { CardListParserService } from './card-list-parser.service';
 
@@ -12,8 +13,9 @@ import { CardListParserService } from './card-list-parser.service';
 export class CardListService {
   private readonly parser = inject(CardListParserService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly http = inject(HttpClient);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
-  private readonly STORAGE_KEY = 'singleton-sort-card-list';
+  private readonly API_URL = '/api/decks';
 
   private readonly cardListsSignal = signal<CardList[]>([]);
   private readonly loadingSignal = signal(false);
@@ -27,8 +29,15 @@ export class CardListService {
 
   constructor() {
     if (this.isBrowser) {
-      this.loadFromStorage();
+      this.loadFromServer();
     }
+  }
+
+  private loadFromServer(): void {
+    this.http.get<CardList[]>(this.API_URL).subscribe({
+      next: (decks) => this.cardListsSignal.set(decks),
+      error: (err) => console.error('Failed to load decks from server:', err)
+    });
   }
 
   /**
@@ -46,7 +55,9 @@ export class CardListService {
     if (result.success && result.cardList) {
       const currentLists = this.cardListsSignal();
       this.cardListsSignal.set([...currentLists, result.cardList]);
-      this.saveToStorage();
+      this.http.post<CardList>(this.API_URL, result.cardList).subscribe({
+        error: (err) => console.error('Failed to save deck to server:', err)
+      });
     } else {
       this.errorsSignal.set(result.errors);
     }
@@ -62,7 +73,9 @@ export class CardListService {
     const currentLists = this.cardListsSignal();
     if (index >= 0 && index < currentLists.length) {
       this.cardListsSignal.set(currentLists.filter((_, i) => i !== index));
-      this.saveToStorage();
+      this.http.delete(`${this.API_URL}/${index}`).subscribe({
+        error: (err) => console.error('Failed to remove deck from server:', err)
+      });
     }
   }
 
@@ -72,7 +85,9 @@ export class CardListService {
   clearCardList(): void {
     this.cardListsSignal.set([]);
     this.errorsSignal.set([]);
-    this.clearStorage();
+    this.http.delete(this.API_URL).subscribe({
+      error: (err) => console.error('Failed to clear decks from server:', err)
+    });
   }
 
   /**
@@ -105,7 +120,9 @@ export class CardListService {
         i === index ? { ...list, name: newName } : list
       );
       this.cardListsSignal.set(updatedLists);
-      this.saveToStorage();
+      this.http.put(`${this.API_URL}/${index}`, { name: newName }).subscribe({
+        error: (err) => console.error('Failed to update deck name on server:', err)
+      });
     }
   }
 
@@ -205,48 +222,4 @@ export class CardListService {
     return this.parser.serializeCardList(lists[index]);
   }
 
-  /**
-   * Saves all card lists to localStorage
-   */
-  private saveToStorage(): void {
-    if (!this.isBrowser) return;
-
-    try {
-      const lists = this.cardListsSignal();
-      const dataToSave = JSON.stringify(lists);
-      localStorage.setItem(this.STORAGE_KEY, dataToSave);
-    } catch (error) {
-      console.error('Failed to save card lists to localStorage:', error);
-    }
-  }
-
-  /**
-   * Loads card lists from localStorage
-   */
-  private loadFromStorage(): void {
-    if (!this.isBrowser) return;
-
-    try {
-      const savedData = localStorage.getItem(this.STORAGE_KEY);
-      if (savedData) {
-        const lists = JSON.parse(savedData) as CardList[];
-        this.cardListsSignal.set(lists);
-      }
-    } catch (error) {
-      console.error('Failed to load card lists from localStorage:', error);
-    }
-  }
-
-  /**
-   * Clears card list from localStorage
-   */
-  private clearStorage(): void {
-    if (!this.isBrowser) return;
-
-    try {
-      localStorage.removeItem(this.STORAGE_KEY);
-    } catch (error) {
-      console.error('Failed to clear card list from localStorage:', error);
-    }
-  }
 }
