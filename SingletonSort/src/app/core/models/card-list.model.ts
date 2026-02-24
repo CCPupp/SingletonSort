@@ -2,9 +2,20 @@
  * Simple card list models
  */
 
+export interface ScryfallCardData {
+  name: string;
+  imageUriSmall: string | null;   // For sidebar thumbnails
+  imageUriNormal: string | null;  // For main grid display
+  oracleText: string | null;
+  manaCost: string | null;
+  typeLine: string | null;
+  error?: string;
+}
+
 export interface CardListEntry {
   quantity: number;
   name: string;
+  scryfallData?: ScryfallCardData;
 }
 
 export interface CardList {

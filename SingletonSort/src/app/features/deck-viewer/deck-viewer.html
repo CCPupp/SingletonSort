@@ -117,8 +117,12 @@
                 <div class="cards-mini-list">
                   @for (card of deck.cards; track card.name) {
                     <div class="card-mini-item">
+                      @if (card.scryfallData?.imageUriSmall) {
+                        <img [src]="card.scryfallData!.imageUriSmall" [alt]="card.name"
+                             class="card-thumbnail" loading="lazy"/>
+                      }
                       <span class="qty">{{ card.quantity }}×</span>
-                      <span class="name">{{ card.name }}</span>
+                      <span class="name" [title]="card.scryfallData?.oracleText || ''">{{ card.name }}</span>
                     </div>
                   }
                 </div>
@@ -160,15 +164,30 @@
 
         <div class="common-cards-grid">
           @for (common of commonCards(); track common.name; let i = $index) {
+            <!-- Type group header (Creatures, Instants, Lands, etc.) -->
             @if (i === 0 || common.group !== commonCards()[i - 1].group) {
-              @if (common.group) {
-                <div class="group-header">{{ common.group }}</div>
-              } @else if (i > 0 && commonCards()[i - 1].group) {
-                <div class="group-header">Other Cards</div>
+              <div class="group-header type-header">{{ common.group || 'Other' }}</div>
+            }
+            <!-- Land subgroup header (Fetch Lands, Shock Lands, etc.) -->
+            @if (common.group === 'Lands' && common.subgroup) {
+              @if (i === 0 || commonCards()[i - 1].group !== 'Lands' || common.subgroup !== commonCards()[i - 1].subgroup) {
+                <div class="group-header subgroup-header">{{ common.subgroup }}</div>
+              }
+            }
+            @if (common.group === 'Lands' && !common.subgroup) {
+              @if (i === 0 || commonCards()[i - 1].group !== 'Lands' || commonCards()[i - 1].subgroup) {
+                <div class="group-header subgroup-header">Other Lands</div>
               }
             }
             <div class="common-card-card">
+              @if (getCardData(common.name)?.imageUriNormal) {
+                <img [src]="getCardData(common.name)?.imageUriNormal" [alt]="common.name"
+                     class="card-image" loading="lazy"/>
+              }
               <div class="card-name-large">{{ common.name }}</div>
+              @if (getCardData(common.name)?.oracleText) {
+                <div class="oracle-text">{{ getCardData(common.name)?.oracleText }}</div>
+              }
               <div class="deck-badges">
                 @for (deckIndex of common.deckIndices; track deckIndex) {
                   <span class="deck-badge">{{ cardLists()[deckIndex]?.name }}</span>

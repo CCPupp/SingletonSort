@@ -1,91 +1,64 @@
 package main
 
 import (
-	"context"
-	"embed"
 	"fmt"
-	"io/fs"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"time"
 )
 
-//go:embed SingletonSort/dist/SingletonSort/browser/*
-var content embed.FS
+const port = "4000"
 
-const port = "8989"
-
-var server *http.Server
+var nodeProcess *exec.Cmd
 
 func main() {
 	log.Println("Starting Singleton Sort...")
 
-	// Start the web server
-	startServer()
+	// Start the Node.js SSR server
+	startNodeServer()
 }
 
-func startServer() {
-	// Get the embedded filesystem
-	distFS, err := fs.Sub(content, "SingletonSort/dist/SingletonSort/browser")
+func startNodeServer() {
+	// Get the directory where the executable is located
+	execPath, err := os.Executable()
 	if err != nil {
-		log.Fatal("Failed to load embedded files:", err)
+		log.Fatal("Failed to get executable path:", err)
+	}
+	execDir := filepath.Dir(execPath)
+
+	// Look for the server.mjs file in the dist folder
+	serverPath := filepath.Join(execDir, "SingletonSort", "dist", "SingletonSort", "server", "server.mjs")
+
+	// If not found relative to executable, try relative to working directory
+	if _, err := os.Stat(serverPath); os.IsNotExist(err) {
+		workDir, _ := os.Getwd()
+		serverPath = filepath.Join(workDir, "SingletonSort", "dist", "SingletonSort", "server", "server.mjs")
 	}
 
-	// Create file server
-	fileServer := http.FileServer(http.FS(distFS))
-
-	// Create router
-	mux := http.NewServeMux()
-
-	// Shutdown endpoint
-	mux.HandleFunc("/api/shutdown", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"message":"Server shutting down..."}`))
-
-		// Shutdown in background
-		go func() {
-			time.Sleep(500 * time.Millisecond)
-			log.Println("Shutdown requested via API")
-
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			if err := server.Shutdown(ctx); err != nil {
-				log.Printf("Server shutdown error: %v", err)
-			}
-			os.Exit(0)
-		}()
-	})
-
-	// Serve static files
-	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Add cache control headers for development
-		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-		fileServer.ServeHTTP(w, r)
-	}))
-
-	// Create server
-	server = &http.Server{
-		Addr:    ":" + port,
-		Handler: mux,
+	// Check if server file exists
+	if _, err := os.Stat(serverPath); os.IsNotExist(err) {
+		log.Fatal("Server file not found. Please run 'npm run build' in the SingletonSort directory first.\nExpected path:", serverPath)
 	}
+
+	log.Printf("Starting Node.js server from: %s", serverPath)
+
+	// Create the node command
+	nodeProcess = exec.Command("node", serverPath)
+	nodeProcess.Env = append(os.Environ(), fmt.Sprintf("PORT=%s", port))
+	nodeProcess.Stdout = os.Stdout
+	nodeProcess.Stderr = os.Stderr
 
 	// Handle graceful shutdown
 	go handleShutdown()
 
 	// Open browser after a short delay
 	go func() {
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1500 * time.Millisecond) // Give Node server time to start
 		url := fmt.Sprintf("http://localhost:%s", port)
 		if err := openBrowser(url); err != nil {
 			log.Printf("Failed to open browser automatically: %v", err)
@@ -93,12 +66,17 @@ func startServer() {
 		}
 	}()
 
-	// Start server
-	log.Printf("Starting Singleton Sort on http://localhost:%s", port)
+	// Start the Node server
+	log.Printf("Singleton Sort starting on http://localhost:%s", port)
 	log.Println("Press Ctrl+C to stop the server")
+	log.Println("Deck data will be saved to SingletonSort/data/decks.json")
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal("Server failed:", err)
+	if err := nodeProcess.Run(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			log.Printf("Node server exited with code: %d", exitErr.ExitCode())
+		} else {
+			log.Fatal("Failed to start Node server:", err)
+		}
 	}
 }
 
@@ -110,13 +88,28 @@ func handleShutdown() {
 
 	log.Println("\nShutting down gracefully...")
 
-	// Create shutdown context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// Kill the Node process
+	if nodeProcess != nil && nodeProcess.Process != nil {
+		if err := nodeProcess.Process.Signal(syscall.SIGTERM); err != nil {
+			log.Printf("Failed to send SIGTERM to Node process: %v", err)
+			// Try harder
+			nodeProcess.Process.Kill()
+		}
 
-	// Shutdown server
-	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("Server shutdown error: %v", err)
+		// Wait for process to exit (with timeout)
+		done := make(chan error, 1)
+		go func() {
+			_, err := nodeProcess.Process.Wait()
+			done <- err
+		}()
+
+		select {
+		case <-done:
+			log.Println("Node server stopped")
+		case <-time.After(5 * time.Second):
+			log.Println("Timeout waiting for Node server, forcing kill")
+			nodeProcess.Process.Kill()
+		}
 	}
 
 	log.Println("Server stopped")

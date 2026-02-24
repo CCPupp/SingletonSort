@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { CardList, ParseResult } from '../models/card-list.model';
+import { CardList, ParseResult, ScryfallCardData } from '../models/card-list.model';
 import { CardListParserService } from './card-list-parser.service';
 
 /**
@@ -54,8 +54,20 @@ export class CardListService {
 
     if (result.success && result.cardList) {
       const currentLists = this.cardListsSignal();
+      const newIndex = currentLists.length;
+      // Add deck locally first (without Scryfall data)
       this.cardListsSignal.set([...currentLists, result.cardList]);
+
+      // Post to server and update with enriched data when response arrives
       this.http.post<CardList>(this.API_URL, result.cardList).subscribe({
+        next: (enrichedDeck) => {
+          // Replace the deck at newIndex with the enriched version from server
+          const lists = this.cardListsSignal();
+          const updatedLists = lists.map((deck, i) =>
+            i === newIndex ? enrichedDeck : deck
+          );
+          this.cardListsSignal.set(updatedLists);
+        },
         error: (err) => console.error('Failed to save deck to server:', err)
       });
     } else {
@@ -169,14 +181,33 @@ export class CardListService {
   }
 
   /**
+   * Extracts the main card type from a type line
+   */
+  private getCardType(typeLine: string | null | undefined): string {
+    if (!typeLine) return 'Other';
+
+    // Order matters: check more specific types first
+    if (typeLine.includes('Creature')) return 'Creatures';
+    if (typeLine.includes('Planeswalker')) return 'Planeswalkers';
+    if (typeLine.includes('Instant')) return 'Instants';
+    if (typeLine.includes('Sorcery')) return 'Sorceries';
+    if (typeLine.includes('Artifact')) return 'Artifacts';
+    if (typeLine.includes('Enchantment')) return 'Enchantments';
+    if (typeLine.includes('Land')) return 'Lands';
+    if (typeLine.includes('Battle')) return 'Battles';
+
+    return 'Other';
+  }
+
+  /**
    * Finds cards that appear in multiple decks
    */
-  private findCommonCards(): Array<{ name: string; deckIndices: number[]; group: string | null }> {
+  private findCommonCards(): Array<{ name: string; deckIndices: number[]; group: string | null; subgroup: string | null }> {
     const lists = this.cardListsSignal();
     if (lists.length < 2) return [];
 
     const basicLands = new Set(['Forest', 'Plains', 'Mountain', 'Island', 'Swamp']);
-    const cardMap = new Map<string, Set<number>>();
+    const cardMap = new Map<string, { deckIndices: Set<number>; typeLine: string | null }>();
 
     lists.forEach((list, deckIndex) => {
       list.cards.forEach(card => {
@@ -185,29 +216,62 @@ export class CardListService {
         }
 
         if (!cardMap.has(card.name)) {
-          cardMap.set(card.name, new Set());
+          cardMap.set(card.name, {
+            deckIndices: new Set(),
+            typeLine: card.scryfallData?.typeLine || null
+          });
         }
-        cardMap.get(card.name)!.add(deckIndex);
+        cardMap.get(card.name)!.deckIndices.add(deckIndex);
+        // Update typeLine if we have it now but didn't before
+        if (!cardMap.get(card.name)!.typeLine && card.scryfallData?.typeLine) {
+          cardMap.get(card.name)!.typeLine = card.scryfallData.typeLine;
+        }
       });
     });
 
-    const commonCards: Array<{ name: string; deckIndices: number[]; group: string | null }> = [];
-    cardMap.forEach((deckIndices, cardName) => {
-      if (deckIndices.size > 1) {
+    const commonCards: Array<{ name: string; deckIndices: number[]; group: string | null; subgroup: string | null }> = [];
+    cardMap.forEach((data, cardName) => {
+      if (data.deckIndices.size > 1) {
+        const cardType = this.getCardType(data.typeLine);
+        const landGroup = this.getLandGroup(cardName);
         commonCards.push({
           name: cardName,
-          deckIndices: Array.from(deckIndices).sort(),
-          group: this.getLandGroup(cardName)
+          deckIndices: Array.from(data.deckIndices).sort(),
+          group: cardType,
+          subgroup: cardType === 'Lands' ? landGroup : null
         });
       }
     });
 
+    // Define type order for sorting
+    const typeOrder: Record<string, number> = {
+      'Creatures': 1,
+      'Planeswalkers': 2,
+      'Instants': 3,
+      'Sorceries': 4,
+      'Artifacts': 5,
+      'Enchantments': 6,
+      'Lands': 7,
+      'Battles': 8,
+      'Other': 9
+    };
+
     return commonCards.sort((a, b) => {
-      const groupA = a.group || 'zzz';
-      const groupB = b.group || 'zzz';
-      if (groupA !== groupB) {
-        return groupA.localeCompare(groupB);
+      // Sort by card type first
+      const typeA = typeOrder[a.group || 'Other'] || 99;
+      const typeB = typeOrder[b.group || 'Other'] || 99;
+      if (typeA !== typeB) {
+        return typeA - typeB;
       }
+      // Within lands, sort by subgroup
+      if (a.group === 'Lands' && b.group === 'Lands') {
+        const subA = a.subgroup || 'zzz';
+        const subB = b.subgroup || 'zzz';
+        if (subA !== subB) {
+          return subA.localeCompare(subB);
+        }
+      }
+      // Finally, sort by name
       return a.name.localeCompare(b.name);
     });
   }
@@ -220,6 +284,18 @@ export class CardListService {
     if (index < 0 || index >= lists.length) return null;
 
     return this.parser.serializeCardList(lists[index]);
+  }
+
+  /**
+   * Gets Scryfall data for a card by name from loaded decks
+   */
+  getCardData(cardName: string): ScryfallCardData | undefined {
+    const decks = this.cardListsSignal();
+    for (const deck of decks) {
+      const card = deck.cards.find(c => c.name === cardName);
+      if (card?.scryfallData) return card.scryfallData;
+    }
+    return undefined;
   }
 
 }

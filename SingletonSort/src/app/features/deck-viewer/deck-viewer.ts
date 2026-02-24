@@ -2,7 +2,7 @@ import { Component, signal, inject, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { CardListService } from '../../core';
+import { CardListService, ScryfallCardData } from '../../core';
 
 @Component({
   selector: 'app-deck-viewer',
@@ -154,5 +154,10 @@ export class DeckViewer {
         }
       });
     }
+  }
+
+  // Get Scryfall data for a card by name
+  getCardData(cardName: string): ScryfallCardData | undefined {
+    return this.cardListService.getCardData(cardName);
   }
 }
