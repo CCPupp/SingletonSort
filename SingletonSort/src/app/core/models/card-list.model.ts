@@ -30,3 +30,8 @@ export interface ParseResult {
   cardList: CardList | null;
   errors: string[];
 }
+
+export interface CollectionEntry {
+  cardName: string;
+  ownedBy: string | null; // deck name that currently has this card physically
+}

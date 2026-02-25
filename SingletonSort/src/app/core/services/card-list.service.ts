@@ -186,15 +186,16 @@ export class CardListService {
   private getCardType(typeLine: string | null | undefined): string {
     if (!typeLine) return 'Other';
 
-    // Order matters: check more specific types first
-    if (typeLine.includes('Creature')) return 'Creatures';
-    if (typeLine.includes('Planeswalker')) return 'Planeswalkers';
-    if (typeLine.includes('Instant')) return 'Instants';
-    if (typeLine.includes('Sorcery')) return 'Sorceries';
-    if (typeLine.includes('Artifact')) return 'Artifacts';
-    if (typeLine.includes('Enchantment')) return 'Enchantments';
-    if (typeLine.includes('Land')) return 'Lands';
-    if (typeLine.includes('Battle')) return 'Battles';
+    // For double-faced cards use only the front face type (before " // ")
+    const t = typeLine.split(' // ')[0];
+    if (t.includes('Creature')) return 'Creatures';
+    if (t.includes('Planeswalker')) return 'Planeswalkers';
+    if (t.includes('Instant')) return 'Instants';
+    if (t.includes('Sorcery')) return 'Sorceries';
+    if (t.includes('Artifact')) return 'Artifacts';
+    if (t.includes('Enchantment')) return 'Enchantments';
+    if (t.includes('Land')) return 'Lands';
+    if (t.includes('Battle')) return 'Battles';
 
     return 'Other';
   }

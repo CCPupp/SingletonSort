@@ -43,6 +43,7 @@ interface ScryfallCard {
       normal?: string;
     };
     oracle_text?: string;
+    type_line?: string;
   }>;
   oracle_text?: string;
   mana_cost?: string;
@@ -64,19 +65,28 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 const DATA_DIR = join(import.meta.dirname, '../../../data');
 const DATA_FILE = join(DATA_DIR, 'decks.json');
 const CACHE_FILE = join(DATA_DIR, 'card-cache.json');
+const COLLECTION_FILE = join(DATA_DIR, 'collection.json');
 const SCRYFALL_BASE = 'https://api.scryfall.com';
 
 // In-memory cache
 let cardCache: Map<string, ScryfallCardData> = new Map();
 
-// Load cache from file
+// Load cache from file, dropping any DFC entries stored with the old combined type line
+// so they are re-fetched with the correct front-face type and images.
 function loadCache(): void {
   if (existsSync(CACHE_FILE)) {
     try {
       const data = readFileSync(CACHE_FILE, 'utf-8');
       const parsed = JSON.parse(data) as Record<string, ScryfallCardData>;
       cardCache = new Map(Object.entries(parsed));
-      console.log(`Loaded ${cardCache.size} cards from cache`);
+      let invalidated = 0;
+      for (const [name, entry] of cardCache) {
+        if (entry.typeLine?.includes(' // ')) {
+          cardCache.delete(name);
+          invalidated++;
+        }
+      }
+      console.log(`Loaded ${cardCache.size} cards from cache${invalidated ? ` (invalidated ${invalidated} DFC entries for re-fetch)` : ''}`);
     } catch (err) {
       console.error('Failed to load cache:', err);
       cardCache = new Map();
@@ -180,16 +190,24 @@ async function fetchCardsFromScryfall(cardNames: string[]): Promise<Map<string, 
       // Process found cards - fetch oldest printing for each
       for (const card of data.data) {
         const oldestPrinting = await fetchOldestPrinting(card.name);
-        const imageSource = oldestPrinting || card;
-        const images = getImageUris(imageSource);
+
+        // Use oldest printing images when available, fall back to collection-endpoint card
+        // (some DFC oldest printings lack card_faces image data)
+        let images = oldestPrinting ? getImageUris(oldestPrinting) : null;
+        if (!images?.small && !images?.normal) {
+          images = getImageUris(card);
+        }
+
+        // For double-faced cards use the front face type line; fall back to combined type line
+        const typeLine = card.card_faces?.[0]?.type_line ?? card.type_line ?? null;
 
         const scryfallData: ScryfallCardData = {
           name: card.name,
-          imageUriSmall: images.small,
-          imageUriNormal: images.normal,
+          imageUriSmall: images?.small ?? null,
+          imageUriNormal: images?.normal ?? null,
           oracleText: card.oracle_text || (card.card_faces?.[0]?.oracle_text) || null,
           manaCost: card.mana_cost || null,
-          typeLine: card.type_line || null
+          typeLine
         };
         cardCache.set(card.name, scryfallData);
         results.set(card.name, scryfallData);
@@ -253,19 +271,21 @@ function enrichDecksWithCache(decks: CardList[]): CardList[] {
   }));
 }
 
-// Pre-fetch Scryfall data for all cards in existing decks
-async function prefetchScryfallData(): Promise<void> {
-  const decks = readDecks();
-  const allCardNames = new Set<string>();
-  decks.forEach(deck => {
-    deck.cards.forEach(card => allCardNames.add(card.name));
-  });
 
-  if (allCardNames.size > 0) {
-    console.log(`Pre-fetching Scryfall data for ${allCardNames.size} unique cards...`);
-    await fetchCardsFromScryfall(Array.from(allCardNames));
-    console.log('Pre-fetch complete.');
-  }
+interface CollectionEntry {
+  cardName: string;
+  ownedBy: string | null;
+}
+
+function readCollection(): CollectionEntry[] {
+  if (!existsSync(COLLECTION_FILE)) return [];
+  const data = readFileSync(COLLECTION_FILE, 'utf-8');
+  return JSON.parse(data) as CollectionEntry[];
+}
+
+function writeCollection(entries: CollectionEntry[]): void {
+  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+  writeFileSync(COLLECTION_FILE, JSON.stringify(entries, null, 2));
 }
 
 function readDecks(): CardList[] {
@@ -289,10 +309,22 @@ const angularApp = new AngularNodeAppEngine();
 app.use(express.json());
 
 // GET /api/decks - Return all decks enriched with Scryfall data
-app.get('/api/decks', (_req, res) => {
-  const decks = readDecks();
-  const enrichedDecks = enrichDecksWithCache(decks);
-  res.json(enrichedDecks);
+// Fetches any uncached cards before responding so the client always gets full data.
+app.get('/api/decks', async (_req, res) => {
+  try {
+    const decks = readDecks();
+    const allCardNames = new Set<string>();
+    decks.forEach(deck => deck.cards.forEach(card => allCardNames.add(card.name)));
+    const uncached = Array.from(allCardNames).filter(name => !cardCache.has(name));
+    if (uncached.length > 0) {
+      await fetchCardsFromScryfall(uncached);
+    }
+    const enrichedDecks = enrichDecksWithCache(decks);
+    res.json(enrichedDecks);
+  } catch (err) {
+    console.error('Error loading decks:', err);
+    res.status(500).json({ error: 'Failed to load decks' });
+  }
 });
 
 // POST /api/decks - Add a new deck (async to fetch Scryfall data)
@@ -343,6 +375,26 @@ app.delete('/api/decks', (_req, res) => {
   res.status(204).send();
 });
 
+// GET /api/collection - Return all card assignments
+app.get('/api/collection', (_req, res) => {
+  res.json(readCollection());
+});
+
+// PUT /api/collection/:cardName - Upsert a card assignment
+app.put('/api/collection/:cardName', (req, res) => {
+  const cardName = decodeURIComponent(req.params['cardName']);
+  const { ownedBy } = req.body as { ownedBy: string | null };
+  const entries = readCollection();
+  const existing = entries.findIndex(e => e.cardName === cardName);
+  if (existing >= 0) {
+    entries[existing].ownedBy = ownedBy;
+  } else {
+    entries.push({ cardName, ownedBy });
+  }
+  writeCollection(entries);
+  res.json({ cardName, ownedBy });
+});
+
 /**
  * Serve static files from /browser
  */
@@ -371,9 +423,7 @@ app.use((req, res, next) => {
  * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */
 if (isMainModule(import.meta.url)) {
-  // Load cache and pre-fetch Scryfall data on startup
   loadCache();
-  prefetchScryfallData().catch(err => console.error('Pre-fetch error:', err));
 
   const port = process.env['PORT'] || 4000;
   app.listen(port, (error) => {

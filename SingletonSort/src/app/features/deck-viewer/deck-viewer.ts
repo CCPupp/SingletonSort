@@ -1,12 +1,13 @@
 import { Component, signal, inject, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CardListService, ScryfallCardData } from '../../core';
 
 @Component({
   selector: 'app-deck-viewer',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './deck-viewer.html',
   styleUrl: './deck-viewer.scss'
 })

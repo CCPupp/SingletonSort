@@ -1,0 +1,146 @@
+<div class="app-container">
+  <aside class="sidebar">
+    <header class="sidebar-header">
+      <div class="header-content">
+        <div>
+          <h1>Singleton Sort</h1>
+          <p class="subtitle">Track your collection</p>
+        </div>
+      </div>
+      <nav class="page-nav">
+        <a routerLink="/" class="nav-link">Compare Decks</a>
+        <a routerLink="/collection" class="nav-link active">Collection</a>
+      </nav>
+    </header>
+
+    <div class="sidebar-info">
+      <div class="summary-stats">
+        <div class="stat-row">
+          <span class="stat-label">Loaded decks</span>
+          <span class="stat-value">{{ cardLists().length }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Total unique cards</span>
+          <span class="stat-value">{{ totalUniqueCards() }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Shared cards</span>
+          <span class="stat-value">{{ sharedCardCount() }}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Assigned</span>
+          <span class="stat-value">{{ assignedCount() }}</span>
+        </div>
+      </div>
+
+      @if (cardLists().length === 0) {
+        <div class="no-decks-hint">
+          <p>No decks loaded yet.</p>
+          <a routerLink="/" class="go-link">Go add some decks →</a>
+        </div>
+      }
+
+      @if (cardLists().length > 0) {
+        <div class="decks-summary">
+          <h3>Loaded Decks</h3>
+          @for (deck of cardLists(); track $index) {
+            <div class="deck-chip">
+              <span class="deck-dot"></span>
+              <span>{{ deck.name }}</span>
+              <span class="deck-count">{{ deck.totalCards }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="legend">
+          <h3>Status legend</h3>
+          <div class="legend-item">
+            <span class="status-dot status-conflict"></span>
+            <span>Shared — not assigned</span>
+          </div>
+          <div class="legend-item">
+            <span class="status-dot status-assigned"></span>
+            <span>Assigned to a deck</span>
+          </div>
+          <div class="legend-item">
+            <span class="status-dot status-unassigned"></span>
+            <span>Single deck — unassigned</span>
+          </div>
+        </div>
+      }
+    </div>
+  </aside>
+
+  <main class="main-content">
+    @if (cardLists().length < 1) {
+      <div class="empty-main">
+        <div class="empty-icon">📦</div>
+        <h2>No Decks Loaded</h2>
+        <p>Load your deck lists on the <a routerLink="/">Compare Decks</a> page first.</p>
+      </div>
+    } @else {
+      <header class="main-header">
+        <div class="header-left">
+          <h2>Card Assignments</h2>
+          <p class="header-hint">Track which deck currently holds each physical card.</p>
+        </div>
+        <div class="filters">
+          <label class="toggle-label">
+            <input type="checkbox" [checked]="showSharedOnly()" (change)="toggleSharedOnly()" />
+            Shared cards only
+          </label>
+          <select class="type-filter" [value]="selectedType()" (change)="selectedType.set($any($event.target).value)">
+            @for (type of CARD_TYPES; track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+          <span class="count-badge">{{ filteredCards().length }} cards</span>
+        </div>
+      </header>
+
+      @if (filteredCards().length === 0) {
+        <div class="empty-results">
+          <p>No cards match the current filters.</p>
+        </div>
+      } @else {
+        <div class="card-table">
+          <div class="table-header-row">
+            <div class="col-img"></div>
+            <div class="col-name">Card</div>
+            <div class="col-decks">Decks — click to assign</div>
+          </div>
+
+          @for (card of filteredCards(); track card.cardName; let i = $index) {
+            @if (isTypeStart(i)) {
+              <div class="type-divider">{{ getCardType(card) }}</div>
+            }
+            <div class="card-row" [class]="getStatusClass(card)">
+              <div class="col-img">
+                <span class="status-dot" [class]="getStatusClass(card)" [title]="getStatusTitle(card)"></span>
+                @if (card.scryfallData?.imageUriSmall) {
+                  <img [src]="card.scryfallData!.imageUriSmall" [alt]="card.cardName"
+                       class="card-thumb" loading="lazy" />
+                }
+              </div>
+              <div class="col-name">
+                <span class="card-name">{{ card.cardName }}</span>
+                @if (card.scryfallData?.manaCost) {
+                  <span class="mana-cost">{{ card.scryfallData!.manaCost }}</span>
+                }
+              </div>
+              <div class="col-decks">
+                @for (deckName of card.deckNames; track deckName) {
+                  <button class="deck-badge" [class.active-deck]="card.currentDeck === deckName"
+                          (click)="toggleDeckAssignment(card.cardName, deckName, card.currentDeck)"
+                          [title]="card.currentDeck === deckName ? 'Click to unassign' : 'Click to mark as currently in this deck'">
+                    {{ deckName }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </main>
+</div>
